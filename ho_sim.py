@@ -13,7 +13,7 @@ def veniVidi (
         pickleDir = "d_pdf/", 
         year=2016, 
         bay=False, 
-        derr = 0.20, 
+        derr = 0.15, 
         targetHo=66.,
         targetQo=-1.,
         grid=False,
@@ -30,7 +30,7 @@ def nowVici (
         pickleDir = "d_pdf/", 
         year=2016, 
         bay=False, 
-        derr = 0.20, 
+        derr = 0.15, 
         targetHo=66.,
         targetQo=-1.,
         grid=False,
@@ -45,7 +45,7 @@ def veniVidiVici (
         pickleDir = "d_pdf/", 
         year=2016, 
         bay=False, 
-        derr = 0.20, 
+        derr = 0.15, 
         targetHo=66.,
         targetQo=-1.,
         grid=False,
@@ -119,7 +119,7 @@ def makeLocationDict (metaMapFile="maps.txt", pickleDir="d_pdf/",
 #
 def veni( locationDict ) :
     simsFile = locationDict["simsFile"]
-    sims, mjds, distances, inj_ra, inj_dec = np.genfromtxt(simsFile, unpack=True, skiprows=40, usecols=(0,2,8,3,4))
+    sims, mjds, distances, inj_ra, inj_dec = np.genfromtxt(simsFile, unpack=True, skip_header=40, usecols=(0,2,8,3,4))
     sims = sims.astype("int")
     return sims, mjds, distances, inj_ra, inj_dec
 #
@@ -202,10 +202,10 @@ def vici (locationDict, run_qo=-1, start=0,end=0) :
     infile = pickleDir + locationDict["metaMapFile"]
     data_catalog = locationDict["catalog"]
 
-    gw,gwerr = np.genfromtxt(infile, unpack=True, skiprows=1, usecols=(1,2))
-    target_ra,target_dec = np.genfromtxt(infile, unpack=True, skiprows=1, usecols=(3,4))
-    inj_ra,inj_dec = np.genfromtxt(infile, unpack=True, skiprows=1, usecols=(6,7))
-    file = np.genfromtxt(infile, unpack=True, skiprows=1, dtype="str", usecols=0)
+    gw,gwerr = np.genfromtxt(infile, unpack=True, skip_header=1, usecols=(1,2))
+    target_ra,target_dec = np.genfromtxt(infile, unpack=True, skip_header=1, usecols=(3,4))
+    inj_ra,inj_dec = np.genfromtxt(infile, unpack=True, skip_header=1, usecols=(6,7))
+    file = np.genfromtxt(infile, unpack=True, skip_header=1, dtype="str", usecols=0)
     if end == 0: end = gw.size
     for i in range(start, end) :
         print file[i], gw[i]
@@ -214,7 +214,7 @@ def vici (locationDict, run_qo=-1, start=0,end=0) :
         sim = simfile.replace(repDir,"")
         sim = sim.replace(".fits.gz","")
         sim = int(sim)
-        map_ra,map_dec,map_vals = hp2np.hp2np(simfile)
+        map_ra,map_dec,map_vals = hp2np.hp2np(simfile, degrade=64, fluxConservation=True)
         if data_catalog == "sdss" :
             h,d = ho_measure.do_sdss(map_ra, map_dec, map_vals, gw[i], gwerr[i], \
                 target_ra=target_ra[i], target_dec=target_dec[i], \
