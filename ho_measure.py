@@ -1,5 +1,6 @@
 import numpy as np
 from scipy import interpolate
+import time
 
 #
 # bayesan approach to measuring H_0 using LIGO distances
@@ -20,7 +21,7 @@ def posterior(h, q,  gw, gw_err, voxen) :
 
     #prior = norm.pdf(h, loc=70., scale=15.)
     prior = 1.0
-    print " prior = ", prior,
+    print "\t prior = ", prior,
 
     uid = voxen.voxelated_gals["pixels"]
 
@@ -38,7 +39,7 @@ def posterior(h, q,  gw, gw_err, voxen) :
         prob += like_vox.sum()
         
     post = prior * prob/np.sqrt(2*np.pi*gw_var)
-    print "\t val = ",post
+    print " posterior = {:.6f}".format(post),
 
     return post
 
@@ -77,23 +78,23 @@ def calc_posterior (
         map_ra, map_dec, map_vals, 
         gal_ra, gal_dec, gal_zed, gal_zerr):
     import voxel
+    timer= True
+
     linear_distance=7.36
     voxen = voxel.voxel(70., q, linear_distance)
     voxen.set_map(map_ra, map_dec, map_vals)
+    if timer: 
+        start = time.time()
 
-    delH = 1
-    delH = 3
-    delH = 10
-    prior_Ho_low = 50; prior_Ho_high = 100
-    prior_Ho_low = 65; prior_Ho_high = 85
+    delH = 1; prior_Ho_low = 50; prior_Ho_high = 100
+#    delH = 3
+#    delH = 10;  prior_Ho_low = 65; prior_Ho_high = 85
     Ho, density =np.array([]),np.array([])
     for h in range(prior_Ho_low, prior_Ho_high+1, delH) :
         print h,
-        #if (np.mod(h+1, 10) == 0) : print ""
-
         voxen.reset(h, q, linear_distance)
-        voxen.build_voxels()
         voxen.set_galcat(gal_ra, gal_dec, gal_zed, gal_zerr)
+        #if (np.mod(h+1, 10) == 0) : print ""
 
         # evaluation of the probability of the data given h (eq 11)
         prob = posterior(h, q, gw, gwerr, voxen)
@@ -101,8 +102,11 @@ def calc_posterior (
         # bookkeeping
         Ho = np.append(Ho, h)
         density = np.append(density, prob)
+        if timer: print "\t {:.1f} sec".format(time.time()-start),
+        print ""
     print ""
     density = density/density.sum()
+    if timer: print "\t total time: {:.1f} sec".format(time.time()-start)"
     return Ho, density
 
 def do_sdss(map_ra, map_dec, map_vals, gw=410., gwerr = 170., \

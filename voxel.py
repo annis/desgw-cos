@@ -108,10 +108,6 @@ class voxel(object) :
 
         ix = map_vals[pix] > 1e-9
         pix=pix[ix]
-        #print len(ix), pix.size, gal_ra[ix].size 
-        #print gal_ra.size, gal_zed.size
-        #print gal_zed[ix].size
-        #raw_input()
         gal_ra = gal_ra[ix]
         gal_dec = gal_dec[ix]
         gal_zed = gal_zed[ix]
@@ -121,8 +117,8 @@ class voxel(object) :
         voxelated_gals = dict()
         voxelated_gals["pixels"] = unique_pix
 
-        print "distributing {} galaxies into {} pixels each with {} voxels".format(
-            gal_ra.size, unique_pix.size,voxel_limits_z.shape[0])
+        print "{} gals over {} pixels each w/ {} voxels".format(
+            gal_ra.size, unique_pix.size,voxel_limits_z.shape[0]),
         for i in range(0, unique_pix.size) :
             # find every galaxy in the given pixel
             upix = unique_pix[i]
@@ -135,7 +131,7 @@ class voxel(object) :
                 ix2 = (gal_zed[ix]  >= zed_1) & (gal_zed[ix] < zed_2)
                 voxels[j] = ( gal_zed[ix][ix2]).size
                 if ( gal_zed[ix][ix2]).size > 0 :
-                    voxels_mean_z[j] = ( gal_zed[ix][ix2] ).mean()
+                    voxels_mean_z[j] = np.median( gal_zed[ix][ix2] )
             # save the voxels labeled by pixel,z_bin
             voxelated_gals[upix] = voxels
             voxelated_gals[upix,"mean_z"] = voxels_mean_z
@@ -171,7 +167,7 @@ class voxel(object) :
 
         voxel_vol = linear_distance**3
         del_vol_interp, first_z = self.volume_samples(h, q, fraction_sky, voxel_vol)
-        print "---\n",voxel_vol,"Mpc^3   first z:",first_z,"\n---"
+        print "\t ---voxel vol {:d} Mpc^3 => initial z={:.3f}  ".format( int(np.round(voxel_vol)), first_z),
     
         # testing outputs
         # e.g.,  z,v,d, vox_z,vox_dc =ho_measure.build_voxels()

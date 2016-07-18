@@ -4,6 +4,8 @@ import numpy as np
 # gridwrx.prep(10)
 # gridwrx.prep(11, "map-2015-74.txt", "d_pdf_2015_74/", targetHo=74.)
 
+# i work in /home/s1/annis/gridworks -> /pnfs/des/scratch/gw/annis/
+
 def prep(jobnum, output="maps-2015-66.txt", pickleDir = "d_pdf_2015_66/", year=2015, 
         bay=True, derr = 0.35, targetHo=66., grid=True, cat="2mpz")  :
 
