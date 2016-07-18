@@ -46,8 +46,6 @@ def getSDSSCat (dir="./data/") :
     cat = "sdss.csv" 
     cat = dir+cat
     ra,dec,imag,gi,zed = np.genfromtxt(cat, unpack=True,comments="#", delimiter=",")
-    ix = ra > 180
-    ra[ix] = ra[ix] -360.
     ix = zed >= 0.02
     ra = ra[ix]; dec = dec[ix]
     imag = imag[ix]; gi = gi[ix]
@@ -57,8 +55,11 @@ def getSDSSCat (dir="./data/") :
     ix = (abs < -21.8)
     ra = ra[ix]; dec = dec[ix]; imag=imag[ix]; zed=zed[ix];  gi=gi[ix]
     print "HACK ho_prep_data"
-    ix=(ra>160)&(ra<180)&(dec>10)&(dec<30)
+    ix=(ra>160)&(ra<180)&(dec>10)&(dec<30)  ;# constant surface density
+    ix=(ra>100)&(ra<260)&(dec>-2)&(dec<70)  ;# the bulk of the north galactic cap
     ra = ra[ix]; dec = dec[ix]; imag=imag[ix]; zed=zed[ix];  gi=gi[ix]
+    ix = ra > 180
+    ra[ix] = ra[ix] -360.
     #return ra,dec,imag,gi,zed
     return ra,dec,zed
 
