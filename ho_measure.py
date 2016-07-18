@@ -106,7 +106,7 @@ def calc_posterior (
         print ""
     print ""
     density = density/density.sum()
-    if timer: print "\t total time: {:.1f} sec".format(time.time()-start)"
+    if timer: print "\t total time: {:.1f} sec".format(time.time()-start)
     return Ho, density
 
 def do_sdss(map_ra, map_dec, map_vals, gw=410., gwerr = 170., \
