@@ -113,34 +113,36 @@ class voxel(object) :
         gal_zed = gal_zed[ix]
         gal_zerr = gal_zerr[ix]
         unique_pix = np.unique(pix)
-
-        voxelated_gals = dict()
-        voxelated_gals["pixels"] = unique_pix
-
-        print "{} gals over {} pixels each w/ {} voxels".format(
-            gal_ra.size, unique_pix.size,voxel_limits_z.shape[0]),
-        for i in range(0, unique_pix.size) :
-            # find every galaxy in the given pixel
-            upix = unique_pix[i]
-            ix = upix == pix
-            voxels = np.zeros(voxel_limits_z.shape[0])
-            voxels_mean_z = np.zeros(voxel_limits_z.shape[0])
-            for j in range(0,voxel_limits_z.shape[0]) :
-                zed_1,zed_2 = voxel_limits_z[j]
-                # fill out the voxels of this pixel
-                ix2 = (gal_zed[ix]  >= zed_1) & (gal_zed[ix] < zed_2)
-                voxels[j] = ( gal_zed[ix][ix2]).size
-                if ( gal_zed[ix][ix2]).size > 0 :
-                    voxels_mean_z[j] = np.median( gal_zed[ix][ix2] )
-            # save the voxels labeled by pixel,z_bin
-            voxelated_gals[upix] = voxels
-            voxelated_gals[upix,"mean_z"] = voxels_mean_z
-
-        self.voxelated_gals = voxelated_gals
         
-        do_multiprocessing = False
-        if do_multiprocessing:
-            resuts = mapVoxelization(gal_zed,voxel_limits_z,unique_pix,pix,numprocessors=2)
+        do_multiprocessing = True
+        if not do_multiprocessing:
+
+            voxelated_gals = dict()
+            voxelated_gals["pixels"] = unique_pix
+
+            print "{} gals over {} pixels each w/ {} voxels".format(
+                gal_ra.size, unique_pix.size,voxel_limits_z.shape[0]),
+            for i in range(0, unique_pix.size) :
+                # find every galaxy in the given pixel
+                upix = unique_pix[i]
+                ix = upix == pix
+                voxels = np.zeros(voxel_limits_z.shape[0])
+                voxels_mean_z = np.zeros(voxel_limits_z.shape[0])
+                for j in range(0,voxel_limits_z.shape[0]) :
+                    zed_1,zed_2 = voxel_limits_z[j]
+                    # fill out the voxels of this pixel
+                    ix2 = (gal_zed[ix]  >= zed_1) & (gal_zed[ix] < zed_2)
+                    voxels[j] = ( gal_zed[ix][ix2]).size
+                    if ( gal_zed[ix][ix2]).size > 0 :
+                        voxels_mean_z[j] = np.median( gal_zed[ix][ix2] )
+                # save the voxels labeled by pixel,z_bin
+                voxelated_gals[upix] = voxels
+                voxelated_gals[upix,"mean_z"] = voxels_mean_z
+
+            self.voxelated_gals = voxelated_gals
+        
+        else:
+            self.voxelated_gals = mapVoxelization(gal_zed,voxel_limits_z,unique_pix,pix,numprocessors=8)
 
         #print "I am here and starting mapping"
         #t_gal_zed, t_voxel_limits_z, t_unique_pix, t_pix = \
@@ -255,38 +257,53 @@ class voxel(object) :
 
 
 # START MULTIPROCESSING TECHNOLOGY
-def mapVoxelization(gal_zed,voxel_limits_z,unique_pix,pix,numprocessors=2):
-    results = []
+def mapVoxelization(gal_zed,voxel_limits_z,unique_pix,pix,numprocessors=2,verbose=False):
+    if verbose: print 'Mapping voxelization. Number of processors available is :',numprocessors
+    indices = range(unique_pix.size)
+    voxelcounts = []
+    voxelmeans = []
+
+    voxelated_gals = dict()
+    voxelated_gals["pixels"] = unique_pix
+
     index = 0
     keeplooping = True
-    numprocesses = numprocessors
+
     while keeplooping:
         output = mp.Queue()
-        ileft = np.min([unique_pix.size-index,numprocesses])
+        ileft = np.min([unique_pix.size-index,numprocessors])
         processes = [mp.Process(target=maploop, args=(x, gal_zed,voxel_limits_z,unique_pix,pix, output)) for x in range(index,index+ileft)]
         for p in processes:
             p.start()
         for p in processes:
-            p.join()
+            p.join(1)
 
-        results.extend([output.get()[0] for p in processes])
+        for x in range(index,index+ileft):
+            i,vc,vm = output.get()
+            upix = unique_pix[i]
+            voxelated_gals[upix] = vc
+            voxelated_gals[upix,"mean_z"] = vm
+
         index += ileft
         if index > unique_pix.size-2:
             keeplooping = False
-    return results
 
-def maploop(i,map_gal_zed, map_voxel_limits_z, map_unique_pix, map_pix, output) :
-    gal_zed, voxel_limits_z, unique_pix, pix = \
-                map_gal_zed, map_voxel_limits_z, map_unique_pix, map_pix
+    return voxelated_gals
+
+def maploop(i,gal_zed, voxel_limits_z, unique_pix, pix, output,verbose=False) :
+    if verbose: print 'running loop ',i
+
     upix = unique_pix[i]
     ix = upix == pix
     voxels = np.zeros(voxel_limits_z.shape[0])
     voxelmeans = np.zeros(voxel_limits_z.shape[0])
-    for    j in range(0,voxel_limits_z.shape[0]):
+    for j in range(0,voxel_limits_z.shape[0]):
         zed_1,zed_2 = voxel_limits_z[j]
         ix2 = (gal_zed[ix] >= zed_1) & (gal_zed[ix] < zed_2)
         voxels[j] = (gal_zed[ix][ix2]).size
         if voxels[j] > 0 :
-            voxelmeans[j] = np.median(gal_zed[ix][ix2])
+            voxelmeans[j] = (gal_zed[ix][ix2]).mean()
     output.put((i, voxels,voxelmeans))
+
+
 
